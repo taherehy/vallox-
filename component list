@@ -1,0 +1,44 @@
+# Component List
+
+## Controller
+- ESP8266 (ESP-01 or WeMos D1 Mini)
+
+## Sensors
+- DHT22 or BME280
+- Optional CO2 sensor
+
+## Control
+- 5V Relay module
+
+## Power
+- 5V power supply
+
+## Other
+- Wires
+- Connectors
+- Enclosure
+
+_____________________________________________________________________
+1x ESP-01 + Level converter​
+
+1x RS485 to TTL (with automatic flow control)​
+
+1x DC-DC Buck Converter ​
+
+Dupont wires​
+
+Pin headers​
+
+2x Servo lead cables​
+
+1x JST Pigtails​
+
+Software for flashing​
+
+Arduino IDE and flashing adapter (e.g. ESP-01 UART)​
+
+Software​
+____________________________________________________________________________
+
+
+
