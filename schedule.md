@@ -1,10 +1,7 @@
 # Project Schedule
 
-## Week 1
-Planning and research
-
 ## Week 2
-Component list and ordering
+Component list 10.04.2026
 
 ## Week 3
 Sensor setup
