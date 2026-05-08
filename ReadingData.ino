@@ -1,5 +1,5 @@
 #include <HardwareSerial.h>
-
+// Reading data from vallox simulator
 HardwareSerial RS485(2);
 
 #define RX_PIN 4
