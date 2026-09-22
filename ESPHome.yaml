@@ -1,0 +1,248 @@
+esphome:
+  name: test
+
+esp32:
+  variant: esp32c6
+
+web_server:
+  port: 80
+  
+api:
+  encryption:
+    key: "Wdr/YvPU6GN9NwBftZM2U4ZIG5jwql2O9/wzCSwj/q4="
+  reboot_timeout: 0s
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  ap:
+    ssid: Beetle ESP32-C6 Fallback Hotspot
+    password: "LRSHEFovtw4N"
+    
+uart:
+  id: uart_bus
+  tx_pin: GPIO4
+  rx_pin: GPIO5
+  baud_rate: 9600
+  data_bits: 8
+  parity: NONE
+  stop_bits: 1
+  debug:
+    direction: BOTH
+  #  dummy_receiver: false
+  #  after:
+  #    bytes: 1
+
+
+# change tx_pin and rx_pin of the uart component to the pins used in your setup
+# To avoid interfering with the bus connection, make sure that you are not using the same pins for serial logging
+# or disable serial logging (wifi will still show logs) by adding:
+logger:
+#  level: DEBUG
+   baud_rate: 0
+# see https://esphome.io/components/logger.html for more details
+
+
+external_components:
+  - source:
+      type: git
+      url: 
+    components: [ vallox ]
+
+climate:
+    # main component is the climate component which controls fan speed, target temperature, heating mode and on/off status and shows current inside temperature.
+  - platform: vallox
+    id: vallox_climate
+    name: climate
+    uart_id: uart_bus
+
+    visual:
+      min_temperature: 10
+      max_temperature: 25
+
+    # Anything below is optional and can be commented if not needed.
+
+    # NUMBER (0-20) in °C for the "summer mode" or heat exchanger bypass temperature threshold. (kennonohituksen toimintalämpötila)
+    # (register 0xAF)
+    heat_bypass:
+      name: heat_bypass
+
+    # BUTTON to reset service interval to interval shown in service_period
+    # (Sets register 0xAB to value of register 0xA6)
+    service_reset:
+      name: service_reset
+
+    # TEXT SENSOR showing failure condition (if any)
+    # (register 0x36)
+    fault_condition:
+      name: fault_condition
+
+    # SELECTOR for type of special mode (fireplace / boost)
+    # (register 0xAA, bit 5 (0x20))
+    switch_type_select:
+      name: switch_type_select
+
+    # NUMBER (1-8) for minimum fan speed, this value is also shown in SENSOR fan_speed_default
+    # (register 0xA9)
+    fan_speed_min:
+      name: fan_speed_min
+
+    # NUMBER (1-8) for maximum fan speed
+    # (register 0xA5)
+    fan_speed_max:
+      name: fan_speed_max
+
+    # BUTTON to trigger special mode (fireplace / boost)
+    # (register 0x71, bit 5 (0x20))
+    switch:
+      name: switch
+
+    # SENSOR for current fan speed (this is the same value as the custom fan mode in parent CLIMATE component)
+    # (register 0x29)
+    fan_speed:
+      name: fan_speed
+
+    # SENSOR showing "default" fan speed (i.e. minimum fan speed). Same data as NUMBER fan_speed_min
+    # (register 0xA9)
+    fan_speed_default:
+      name: fan_speed_default
+
+    # SENSOR for target temperatur. This value is the same you set in parent CLIMATE component.
+    # (register 0xA4)
+    temperature_target:
+      name: temperature_target
+
+    # SENSOR outside temperature. Temperature of incoming outside air before the heat exchanger.
+    # (register 0x32)
+    temperature_outside:
+      name: temperature_outside
+
+    # SENSOR inside temperature. Temperature of outgoing inside air before the heat exchanger.
+    # (register 0x34)
+    temperature_inside:
+      name: temperature_inside
+
+    # SENSOR outgoing temperature. Temperature of outgoing air after the heat exchanger.
+    # (register 0x33)
+    temperature_outgoing:
+      name: temperature_outgoing
+
+    # SENSOR incoming temperature. Temperature of incoming air after the heat exchanger.
+    # (register 0x35)
+    temperature_incoming:
+      name: temperature_incoming
+
+    # SENSOR for indoor air humidity. Optional sensor which requires the appropriate hardware to be connected (https://www.vallox.com/global/product/vallox-se-humidity-sensor/). First out of two possible connected humidity sensors.
+    # Do NOT enable if you do not have this sensor otherwise we will unnecessarily try and pull the data.
+    # (register 0x2F)
+#    humidity_1:
+#      name: humidity_1
+
+    # SENSOR for indoor air humidity. Optional sensor which requires the appropriate hardware to be connected (https://www.vallox.com/global/product/vallox-se-humidity-sensor/). Second out of two possible connected humidity sensors.
+    # Do NOT enable if you do not have this sensor otherwise we will unnecessarily try and pull the data.
+    # (register 0x30)
+#    humidity_2:
+#      name: humidity_2
+
+    # SENSOR for indoor CO₂ sensor. Optional sensor which requires the appropriate hardware to be connected (https://www.vallox.com/global/product/vallox-se-carbon-dioxide-sensor/).
+    # Do NOT enable if you do not have this sensor otherwise we will unnecessarily try and pull the data.
+    # (registers 0x2B (upper byte) and 0x2C (lower byte))
+#    co2:
+#      name: co2
+
+    # TEXT SENSOR showing the current chosen type for the special function (fireplace or boost). This shows the same value as the SELECTOR switch_type_select
+    # If needed the text values can be localized using map filter. (Unfortunately there is nothing similar for the select element in esphome)
+    # (register 0xAA, bit 5 (0x20) )
+    switch_type:
+      name: switch_type
+    # filters:
+    #   - map:
+    #     - boost -> Stoßlüftung
+    #     - fireplace -> Kamin
+
+    # SENSOR showing the remaining time in minutes the system will stay in special function mode once the special function has been activated (boost function runs for 45 minutes, fireplace function for 15 minutes)
+    # (register 0x79)
+    switch_remaining:
+      name: switch_remaining
+
+    # BINARY SENSOR showing if the ventilation is turned on or off
+    # (register 0xA3, bit 0 (0x01))
+    status_on:
+      name: status_on
+
+    # BINARY SENSOR showing if the motor for the incoming air is running
+    # (register 0x08, bit 3 (0x08))
+    status_motor_in:
+      name: status_motor_in
+
+    # BINARY SENSOR showing if the motor for the outgoing air is running (for example, this motor gets deactivated if you enable the special function fireplace)
+    # (register 0x08, bit 5 (0x20))
+    status_motor_out:
+      name: status_motor_out
+
+    # SENSOR showing the service interval (shown in months) (time after which BINARY SENSOR service_needed is activated and to which SENSOR service_remaining gets set to when BUTTON service_reset is pressed.
+    # (register 0xA6)
+#    service_period:
+#      name: service_period
+
+    # SENSOR showing the remaining months in the current service interval. Once this reaches zero the BINARY SENSOR service_needed is activated. You can reset this to the value shown in SENSOR service_period by pressing BUTTON service_reset.
+    # (register 0xAB)
+#    service_remaining:
+#      name: service_remaining
+
+    # BINARY SENSOR that gets activated if the current service interval has elapsed. Reset this after doing maintenance by pressing BUTTON service_reset to start a new service interval as defined in SENSOR service_period.
+    # (register 0xA3, bit 7 (0x80))
+#    service_needed:
+#      name: service_needed
+
+    # BINARY SENSOR showing whether the special function (fireplace or boost) is currently active.
+    # (register 0x71, bit 6 (0x40))
+    switch_active:
+      name: switch_active
+
+    # BINARY SENSOR showing status (rightmost indicator light on panel) of post heating ("Jälkilämmityksen merkkivalo"). The heating mode is set within the CLIMATE parent component when switching between heating and fan only mode.
+    # For anyone that does not have an electric heater module built in I recommend to just set the bypass to 0°C and then control it by enabling or disabling heating
+    # (when heating is enabled it will also always go through the heat exchanger)
+    # (register 0xA3, bit 5 (0x20))
+    heating:
+      name: heating
+
+    # *** MIGHT GET REMOVED IN FUTURE VERSIONS ***
+    # this is controlled in climate component, thus no point to show it here.
+    # BINARY SENSOR heating mode (when this is enabled, this also disables any bypass aka summer_mode, see my comment on top)
+    # (register 0xA3, bit 3 (0x08))
+    heating_mode:
+      name: heating_mode
+
+    # BINARY SENSOR showing status of preheating/front heating. (etulämmitys). Optional hardware required.
+    # register
+    # (register 0x08, bit 4 (0x10))
+    front_heating:
+      name: front_heating
+
+    # BINARY SENSOR showing whether the heat exchanger is bypassed (0 = heat exchanger enabled (winter mode), 1 = bypassing heat exchanger (summer mode), ), (peltimoottorin asento)
+    # See comment at "heating" sensor on how to gain better control over this (bypass can't be directly controlled)
+    # (register 0x08, bit 1 (0x02))
+    summer_mode:
+      name: summer_mode
+
+    # BINARY SENSOR indicating a fault with the device (vian merkkivalo)
+    # (register 0xA3, bit 6 (0x40))
+    problem:
+      name: problem
+
+    # *** MIGHT GET REMOVED IN FUTURE VERSIONS ***
+    # not really needed as any fault should also show up in the "problem" sensor, the relay is only used for connecting something like an alarm externally
+    # BINARY SENSOR fault information relay.
+    # (register 0x08, bit 2 (0x04))
+    error_relay:
+      name: error_relay
+
+    # Possible additional controls (let me know if really needed):
+    # - manual control of incoming/outgoing motor..
+    # - expose heating mode as switch (instead of as part of climate component)
+    # - anything else specified in here: https://wiki.fhem.de/w/images/7/7e/Digit_protocol_english_RS485.pdf
