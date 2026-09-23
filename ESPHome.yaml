@@ -27,6 +27,8 @@ uart:
   id: uart_bus
   tx_pin: GPIO4
   rx_pin: GPIO5
+#  tx_pin: GPIO16
+#  rx_pin: GPIO17
   baud_rate: 9600
   data_bits: 8
   parity: NONE
@@ -36,7 +38,6 @@ uart:
   #  dummy_receiver: false
   #  after:
   #    bytes: 1
-
 
 # change tx_pin and rx_pin of the uart component to the pins used in your setup
 # To avoid interfering with the bus connection, make sure that you are not using the same pins for serial logging
@@ -50,9 +51,59 @@ logger:
 external_components:
   - source:
       type: git
-      url: 
-    components: [ vallox ]
+      url: https://github.com/taherehy/vallox-
+      ref: main
+      path: .
+    components: [vallox]
 
+    
+number:
+  - platform: template
+    name: "Vallox Fan Speed"
+    id: vallox_fan_speed
+    min_value: 1
+    max_value: 8
+    step: 1
+    optimistic: true
+
+    set_action:
+      - lambda: |-
+          uint8_t value;
+
+          switch ((int)x) {
+            case 1: value = 0x01; break;
+            case 2: value = 0x03; break;
+            case 3: value = 0x07; break;
+            case 4: value = 0x0F; break;
+            case 5: value = 0x1F; break;
+            case 6: value = 0x3F; break;
+            case 7: value = 0x7F; break;
+            case 8: value = 0xFF; break;
+            default: return;
+          }
+
+          uint8_t pkt[6];
+
+          pkt[0] = 0x01;       // Domain
+          pkt[1] = 0x21;       // Panel
+          pkt[2] = 0x11;       // Mainboard
+          pkt[3] = 0x29;       // Fan speed variable
+          pkt[4] = value;
+          pkt[5] = pkt[0] + pkt[1] + pkt[2] + pkt[3] + pkt[4];
+
+          id(uart_bus).write_array(pkt, 6);
+
+          ESP_LOGI("vallox",
+                   "Sent speed %d packet: %02X %02X %02X %02X %02X %02X",
+                   (int)x,
+                   pkt[0], pkt[1], pkt[2],
+                   pkt[3], pkt[4], pkt[5]);
+
+#button:
+#  - platform: wake_on_lan
+#    name: "Wake_on_lan"
+#    target_mac_address: "AA:BB:CC:DD:EE:FF"
+ 
 climate:
     # main component is the climate component which controls fan speed, target temperature, heating mode and on/off status and shows current inside temperature.
   - platform: vallox
@@ -88,13 +139,13 @@ climate:
 
     # NUMBER (1-8) for minimum fan speed, this value is also shown in SENSOR fan_speed_default
     # (register 0xA9)
-    fan_speed_min:
-      name: fan_speed_min
+#    fan_speed_min:
+#      name: fan_speed_min
 
     # NUMBER (1-8) for maximum fan speed
     # (register 0xA5)
-    fan_speed_max:
-      name: fan_speed_max
+#    fan_speed_max:
+#      name: fan_speed_max
 
     # BUTTON to trigger special mode (fireplace / boost)
     # (register 0x71, bit 5 (0x20))
@@ -241,8 +292,3 @@ climate:
     # (register 0x08, bit 2 (0x04))
     error_relay:
       name: error_relay
-
-    # Possible additional controls (let me know if really needed):
-    # - manual control of incoming/outgoing motor..
-    # - expose heating mode as switch (instead of as part of climate component)
-    # - anything else specified in here: https://wiki.fhem.de/w/images/7/7e/Digit_protocol_english_RS485.pdf
